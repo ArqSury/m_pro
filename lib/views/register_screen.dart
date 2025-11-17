@@ -8,6 +8,7 @@ import 'package:m_pro/constant/app_color.dart';
 import 'package:m_pro/function/button_function.dart';
 import 'package:m_pro/function/textform_function.dart';
 import 'package:m_pro/services/api.dart';
+import 'package:m_pro/views/login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -127,6 +128,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   backgroundColor: AppColor.button,
                   color: Colors.white,
                   onPressed: isLoading ? null : register,
+                ),
+                SizedBox(height: 40),
+                Divider(color: Colors.white),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Sudah punya akun?',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => LoginScreen(),
+                          ),
+                          (route) => false,
+                        );
+                      },
+                      child: Text(
+                        'Masuk',
+                        style: TextStyle(color: Colors.lightBlueAccent),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
