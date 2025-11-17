@@ -42,6 +42,7 @@ class _ResetPasswordState extends State<ResetPassword> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
+        appBar: AppBar(title: Text('Reset Kata Sandi'), centerTitle: true),
         body: Stack(
           alignment: AlignmentDirectional.center,
           children: [buildBackground(), buildLayer()],

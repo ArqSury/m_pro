@@ -42,6 +42,7 @@ class _EmailVerificationState extends State<EmailVerification> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
+        appBar: AppBar(title: Text('Verifikasi Email'), centerTitle: true),
         body: Stack(
           alignment: AlignmentDirectional.center,
           children: [buildBackground(), buildLayer()],
@@ -57,9 +58,8 @@ class _EmailVerificationState extends State<EmailVerification> {
         key: formKey,
         child: Center(
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Masukan email Anda', style: TextStyle(fontSize: 40)),
+              Text('Masukan email Anda', style: TextStyle(fontSize: 28)),
               TextFormField(
                 controller: emailC,
                 decoration: const InputDecoration(labelText: "Email"),

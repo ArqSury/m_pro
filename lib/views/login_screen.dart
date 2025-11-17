@@ -97,8 +97,8 @@ class _LoginScreenState extends State<LoginScreen> {
               inputEmail(),
               SizedBox(height: 16),
               inputPassword(),
-              Row(children: [buildRemember(), buildForgot()]),
-              SizedBox(height: 32),
+              Row(children: [buildRemember(), Spacer(), buildForgot()]),
+              SizedBox(height: 16),
               ButtonFunction(
                 text: isLoading ? "Loading..." : "Masuk",
                 height: 40,
@@ -109,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               SizedBox(height: 40),
               Divider(color: Colors.white),
-              SizedBox(height: 40),
+              SizedBox(height: 80),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
