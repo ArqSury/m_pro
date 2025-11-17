@@ -96,6 +96,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         key: formKey,
         child: Center(
           child: SingleChildScrollView(
+            physics: BouncingScrollPhysics(),
             child: Column(
               children: [
                 Text(

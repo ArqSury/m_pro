@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:m_pro/constant/app_color.dart';
 import 'package:m_pro/function/button_function.dart';
 import 'package:m_pro/function/textform_function.dart';
 import 'package:m_pro/services/api.dart';
@@ -117,10 +118,10 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               SizedBox(height: 32),
               ButtonFunction(
-                text: isLoading ? "Loading..." : "Login",
+                text: isLoading ? "Loading..." : "Masuk",
                 height: 40,
                 width: double.infinity,
-                backgroundColor: Colors.blue,
+                backgroundColor: AppColor.button,
                 color: Colors.white,
                 onPressed: isLoading ? null : login,
               ),
@@ -144,7 +145,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         (route) => false,
                       );
                     },
-                    child: const Text("Daftar"),
+                    child: const Text(
+                      "Daftar",
+                      style: TextStyle(color: Colors.lightBlueAccent),
+                    ),
                   ),
                 ],
               ),
