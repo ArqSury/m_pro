@@ -85,4 +85,36 @@ class AuthAPI {
       throw Exception("Unexpected server response");
     }
   }
+
+  static Future<void> requestOtp(String email) async {
+    final url = Uri.parse(Endpoint.forgotPassword);
+
+    final response = await http.post(
+      url,
+      headers: {"Accept": "application/json"},
+      body: {"email": email},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception("Gagal mengirim OTP");
+    }
+  }
+
+  static Future<void> resetPassword({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    final url = Uri.parse(Endpoint.resetPassword);
+
+    final response = await http.post(
+      url,
+      headers: {"Accept": "application/json"},
+      body: {"email": email, "otp": otp, "password": newPassword},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception("Gagal reset password, OTP salah?");
+    }
+  }
 }

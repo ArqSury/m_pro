@@ -5,6 +5,8 @@ import 'package:m_pro/function/button_function.dart';
 import 'package:m_pro/function/textform_function.dart';
 import 'package:m_pro/services/api.dart';
 import 'package:m_pro/services/shared_preferences/preferences_handler.dart';
+import 'package:m_pro/views/branches/forgot_password/email_verification.dart';
+import 'package:m_pro/views/main_screen.dart';
 import 'package:m_pro/views/register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -19,6 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final passwordC = TextEditingController();
   final formKey = GlobalKey<FormState>();
   bool isLoading = false;
+  bool rememberMe = false;
 
   login() async {
     if (!formKey.currentState!.validate()) return;
@@ -32,11 +35,16 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       await PreferencesHandler.saveToken(user.data?.token ?? "");
+      await PreferencesHandler.saveRememberMe(rememberMe);
 
       Fluttertoast.showToast(msg: "Login successful");
 
       if (mounted) {
-        Navigator.pushReplacementNamed(context, "/home");
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => MainScreen()),
+          (route) => false,
+        );
       }
     } catch (e) {
       Fluttertoast.showToast(msg: e.toString().replaceAll("Exception:", ""));
@@ -86,36 +94,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               SizedBox(height: 40),
-              TextformFunction(
-                hint: "Email",
-                controller: emailC,
-                validator: (v) {
-                  if (v == null || v.isEmpty) {
-                    return "Email tidak boleh kosong";
-                  } else if (!v.contains('@')) {
-                    return "Email tidak valid";
-                  }
-                  return null;
-                },
-              ),
+              inputEmail(),
               SizedBox(height: 16),
-              TextformFunction(
-                hint: "Kata Sandi",
-                isPassword: true,
-                controller: passwordC,
-                validator: (v) {
-                  if (v == null || v.isEmpty) {
-                    return "Kata sandi tidak boleh kosong";
-                  } else if (v.length < 6) {
-                    return "Kata sandi minimal 6 karakter";
-                  }
-                  return null;
-                },
-              ),
-              Row(children: [
-
-                ],
-              ),
+              inputPassword(),
+              Row(children: [buildRemember(), buildForgot()]),
               SizedBox(height: 32),
               ButtonFunction(
                 text: isLoading ? "Loading..." : "Masuk",
@@ -156,6 +138,66 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  TextButton buildForgot() {
+    return TextButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => EmailVerification()),
+        );
+      },
+      child: const Text(
+        "Lupa kata sandi?",
+        style: TextStyle(color: Colors.white),
+      ),
+    );
+  }
+
+  Row buildRemember() {
+    return Row(
+      children: [
+        Checkbox(
+          value: rememberMe,
+          onChanged: (v) {
+            setState(() => rememberMe = v!);
+          },
+        ),
+        Text("Remember Me", style: TextStyle(color: Colors.white)),
+      ],
+    );
+  }
+
+  TextformFunction inputPassword() {
+    return TextformFunction(
+      hint: "Kata Sandi",
+      isPassword: true,
+      controller: passwordC,
+      validator: (v) {
+        if (v == null || v.isEmpty) {
+          return "Kata sandi tidak boleh kosong";
+        } else if (v.length < 6) {
+          return "Kata sandi minimal 6 karakter";
+        }
+        return null;
+      },
+    );
+  }
+
+  TextformFunction inputEmail() {
+    return TextformFunction(
+      hint: "Email",
+      controller: emailC,
+      validator: (v) {
+        if (v == null || v.isEmpty) {
+          return "Email tidak boleh kosong";
+        } else if (!v.contains('@')) {
+          return "Email tidak valid";
+        }
+        return null;
+      },
     );
   }
 
