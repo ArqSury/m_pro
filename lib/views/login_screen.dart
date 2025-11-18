@@ -29,7 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => isLoading = true);
 
     try {
-      final user = await AuthAPI.loginUser(
+      final user = await AuthAPI.login(
         email: emailC.text,
         password: passwordC.text,
       );
@@ -119,12 +119,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   TextButton(
                     onPressed: () {
-                      Navigator.pushAndRemoveUntil(
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => RegisterScreen(),
                         ),
-                        (route) => false,
                       );
                     },
                     child: const Text(

@@ -34,57 +34,31 @@ class Data {
 }
 
 class User {
+  int? id;
   String? name;
   String? email;
-  String? password;
-  String? gender;
-  String? profilePhoto;
-  int? batchId;
-  int? trainingId;
-  DateTime? updatedAt;
   DateTime? createdAt;
-  int? id;
+  DateTime? updatedAt;
 
-  User({
-    this.name,
-    this.email,
-    this.password,
-    this.gender,
-    this.profilePhoto,
-    this.batchId,
-    this.trainingId,
-    this.updatedAt,
-    this.createdAt,
-    this.id,
-  });
+  User({this.id, this.name, this.email, this.createdAt, this.updatedAt});
 
   factory User.fromJson(Map<String, dynamic> json) => User(
+    id: json["id"],
     name: json["name"],
     email: json["email"],
-    password: json["password"],
-    gender: json["gender"],
-    profilePhoto: json["profile_photo"],
-    batchId: json["batch_id"],
-    trainingId: json["training_id"],
-    updatedAt: json["updated_at"] == null
-        ? null
-        : DateTime.parse(json["updated_at"]),
     createdAt: json["created_at"] == null
         ? null
         : DateTime.parse(json["created_at"]),
-    id: json["id"],
+    updatedAt: json["updated_at"] == null
+        ? null
+        : DateTime.parse(json["updated_at"]),
   );
 
   Map<String, dynamic> toJson() => {
+    "id": id,
     "name": name,
     "email": email,
-    "password": password,
-    "gender": gender,
-    "profile_photo": profilePhoto,
-    "batch_id": batchId,
-    "training_id": trainingId,
-    "updated_at": updatedAt?.toIso8601String(),
     "created_at": createdAt?.toIso8601String(),
-    "id": id,
+    "updated_at": updatedAt?.toIso8601String(),
   };
 }

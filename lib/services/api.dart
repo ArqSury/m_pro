@@ -1,102 +1,71 @@
 import 'dart:convert';
-import 'dart:developer';
-
 import 'package:http/http.dart' as http;
-import 'package:m_pro/constant/endpoint.dart';
-import 'package:m_pro/models/login_model.dart';
-import 'package:m_pro/models/register_model.dart';
+import 'package:m_pro/models/register_request.dart';
+import 'package:m_pro/services/shared_preferences/preferences_handler.dart';
+import '../constant/endpoint.dart';
+import '../models/login_model.dart';
+import '../models/register_model.dart';
 
 class AuthAPI {
-  static Future<RegisterModel> registerUser({
-    required String name,
-    required String email,
-    required String password,
-    String? gender,
-    int? batchId,
-    int? trainingId,
-    String? profilePhoto,
-  }) async {
-    final url = Uri.parse(Endpoint.register);
-
-    final Map<String, dynamic> data = {
-      "name": name,
-      "email": email,
-      "password": password,
-      "gender": gender,
-      "batch_id": batchId,
-      "training_id": trainingId,
-      if (profilePhoto != null) "profile_photo": profilePhoto,
-    };
-
-    final response = await http.post(
-      url,
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode(data),
-    );
-
-    if (gender != "L" && gender != "P") {
-      throw Exception(
-        "Jenis kelamin must be either 'L' (Laki-laki) or 'P' (Perempuan).",
-      );
-    }
-
-    log("REGISTER RESPONSE: ${response.body}");
-    log("STATUS CODE: ${response.statusCode}");
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return RegisterModel.fromJson(json.decode(response.body));
-    } else {
-      final error = json.decode(response.body);
-      throw Exception(error["message"]);
-    }
-  }
-
-  static Future<LoginModel> loginUser({
+  static Future<LoginModel> login({
     required String email,
     required String password,
   }) async {
     final url = Uri.parse(Endpoint.login);
 
-    final Map<String, dynamic> data = {"email": email, "password": password};
-
     final response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"email": email, "password": password}),
+    );
+
+    final json = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      return LoginModel.fromJson(json);
+    } else {
+      throw Exception(json["message"] ?? "Login failed");
+    }
+  }
+
+  static Future<RegisterModel> registerUser(RegisterRequest request) async {
+    final url = Uri.parse(Endpoint.register);
+
+    final res = await http.post(
       url,
       headers: {
         "Accept": "application/json",
         "Content-Type": "application/json",
       },
-      body: jsonEncode(data),
+      body: jsonEncode(request.toJson()),
     );
 
-    log("LOGIN RESPONSE: ${response.body}");
-    log("STATUS CODE: ${response.statusCode}");
+    final data = jsonDecode(res.body);
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return LoginModel.fromJson(json.decode(response.body));
+    if (res.statusCode == 200) {
+      final registerModel = RegisterModel.fromJson(data);
+
+      await PreferencesHandler.saveToken(registerModel.data?.token ?? "");
+
+      return registerModel;
     }
 
-    try {
-      final error = json.decode(response.body);
-      throw Exception(error["message"] ?? "Login failed");
-    } catch (_) {
-      throw Exception("Unexpected server response");
-    }
+    throw Exception(data["message"] ?? "Register failed");
   }
 
   static Future<void> requestOtp(String email) async {
     final url = Uri.parse(Endpoint.forgotPassword);
 
-    final response = await http.post(
+    final res = await http.post(
       url,
-      headers: {"Accept": "application/json"},
-      body: {"email": email},
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"email": email}),
     );
 
-    if (response.statusCode != 200) {
-      throw Exception("Gagal mengirim OTP");
+    final data = jsonDecode(res.body);
+
+    if (res.statusCode != 200) {
+      throw Exception(data["message"] ?? "Gagal mengirim OTP");
     }
   }
 
@@ -107,14 +76,16 @@ class AuthAPI {
   }) async {
     final url = Uri.parse(Endpoint.resetPassword);
 
-    final response = await http.post(
+    final res = await http.post(
       url,
-      headers: {"Accept": "application/json"},
-      body: {"email": email, "otp": otp, "password": newPassword},
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"email": email, "otp": otp, "password": newPassword}),
     );
 
-    if (response.statusCode != 200) {
-      throw Exception("Gagal reset password, OTP salah?");
+    final data = jsonDecode(res.body);
+
+    if (res.statusCode != 200) {
+      throw Exception(data["message"] ?? "Reset password gagal");
     }
   }
 }

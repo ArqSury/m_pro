@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:m_pro/constant/app_color.dart';
 import 'package:m_pro/function/button_function.dart';
 import 'package:m_pro/function/textform_function.dart';
+import 'package:m_pro/models/register_request.dart';
 import 'package:m_pro/services/api.dart';
 import 'package:m_pro/views/login_screen.dart';
 
@@ -27,10 +28,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final formKey = GlobalKey<FormState>();
   String? gender;
   bool isLoading = false;
+
   File? selectedImage;
   String? base64Photo;
 
-  pickImage() async {
+  Future pickImage() async {
     final picker = ImagePicker();
     final XFile? img = await picker.pickImage(source: ImageSource.gallery);
 
@@ -59,22 +61,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       await AuthAPI.registerUser(
-        name: nameC.text,
-        email: emailC.text,
-        password: passwordC.text,
-        gender: gender,
-        batchId: int.tryParse(batchC.text),
-        trainingId: int.tryParse(trainingC.text),
-        profilePhoto: base64Photo,
+        RegisterRequest(
+          name: nameC.text,
+          email: emailC.text,
+          password: passwordC.text,
+          jenisKelamin: gender!,
+          batchId: int.parse(batchC.text),
+          trainingId: int.parse(trainingC.text),
+          profilePhoto: base64Photo,
+        ),
       );
+      print("REGISTER START");
+      print("REGISTER DONE");
 
       Fluttertoast.showToast(msg: "Registrasi berhasil");
-      if (mounted) Navigator.pop(context);
+
+      if (mounted) {
+        Navigator.pop(context);
+      }
     } catch (e) {
       Fluttertoast.showToast(msg: e.toString().replaceAll("Exception:", ""));
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
-
-    setState(() => isLoading = false);
   }
 
   @override
@@ -96,10 +105,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         key: formKey,
         child: Center(
           child: SingleChildScrollView(
-            physics: BouncingScrollPhysics(),
+            physics: const BouncingScrollPhysics(),
             child: Column(
               children: [
-                Text(
+                const Text(
                   'Daftar',
                   style: TextStyle(
                     color: Colors.white,
@@ -107,21 +116,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 inputName(),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 inputEmail(),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 inputPassword(),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 inputGender(),
-                SizedBox(height: 15),
+                const SizedBox(height: 16),
                 inputBatchID(),
-                SizedBox(height: 15),
+                const SizedBox(height: 16),
                 inputTrainingID(),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 inputProfilePhoto(),
-                SizedBox(height: 28),
+
+                const SizedBox(height: 28),
+
                 ButtonFunction(
                   text: isLoading ? "Loading..." : "Daftar",
                   height: 50,
@@ -130,26 +141,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   color: Colors.white,
                   onPressed: isLoading ? null : register,
                 ),
-                SizedBox(height: 40),
-                Divider(color: Colors.white),
+
+                const SizedBox(height: 40),
+                const Divider(color: Colors.white),
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
+                    const Text(
                       'Sudah punya akun?',
                       style: TextStyle(color: Colors.white),
                     ),
                     TextButton(
                       onPressed: () {
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => LoginScreen(),
-                          ),
-                          (route) => false,
-                        );
+                        Navigator.pop(context);
                       },
-                      child: Text(
+                      child: const Text(
                         'Masuk',
                         style: TextStyle(color: Colors.lightBlueAccent),
                       ),
@@ -164,12 +171,89 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  TextformFunction inputName() {
+    return TextformFunction(
+      hint: "Nama",
+      controller: nameC,
+      validator: (v) {
+        if (v == null || v.isEmpty) return "Nama tidak boleh kosong";
+        return null;
+      },
+    );
+  }
+
+  TextformFunction inputEmail() {
+    return TextformFunction(
+      hint: "Email",
+      controller: emailC,
+      validator: (v) {
+        if (v == null || v.isEmpty) return "Email tidak boleh kosong";
+        if (!v.contains('@')) return "Email tidak valid";
+        return null;
+      },
+    );
+  }
+
+  TextformFunction inputPassword() {
+    return TextformFunction(
+      hint: "Kata Sandi",
+      isPassword: true,
+      controller: passwordC,
+      validator: (v) {
+        if (v == null || v.isEmpty) return "Kata sandi tidak boleh kosong";
+        if (v.length < 6) return "Minimal 6 karakter";
+        return null;
+      },
+    );
+  }
+
+  DropdownButtonFormField<String> inputGender() {
+    return DropdownButtonFormField<String>(
+      decoration: const InputDecoration(
+        filled: true,
+        fillColor: Colors.white,
+        labelText: "Jenis Kelamin",
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
+      ),
+      value: gender,
+      hint: const Text("Pilih Jenis Kelamin"),
+      items: const [
+        DropdownMenuItem(value: "L", child: Text("Laki-laki")),
+        DropdownMenuItem(value: "P", child: Text("Perempuan")),
+      ],
+      validator: (v) => v == null ? "Jenis kelamin wajib dipilih" : null,
+      onChanged: (v) => setState(() => gender = v),
+    );
+  }
+
+  TextformFunction inputBatchID() {
+    return TextformFunction(
+      hint: "Batch ID",
+      isNumber: true,
+      controller: batchC,
+      validator: (v) =>
+          v == null || v.isEmpty ? "Batch ID tidak boleh kosong" : null,
+    );
+  }
+
+  TextformFunction inputTrainingID() {
+    return TextformFunction(
+      hint: "Training ID",
+      isNumber: true,
+      controller: trainingC,
+      validator: (v) =>
+          v == null || v.isEmpty ? "Training ID tidak boleh kosong" : null,
+    );
+  }
+
   Container inputProfilePhoto() {
     return Container(
       height: 160,
       width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.all(Radius.circular(12)),
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
         border: Border.all(color: Colors.black),
         color: Colors.white,
       ),
@@ -196,108 +280,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  TextformFunction inputTrainingID() {
-    return TextformFunction(
-      hint: "Training ID",
-      isNumber: true,
-      controller: trainingC,
-      validator: (v) {
-        if (v == null || v.isEmpty) {
-          return "Training ID tidak boleh kosong";
-        }
-        return null;
-      },
-    );
-  }
-
-  TextformFunction inputBatchID() {
-    return TextformFunction(
-      hint: "Batch ID",
-      isNumber: true,
-      controller: batchC,
-      validator: (v) {
-        if (v == null || v.isEmpty) {
-          return "Batch ID tidak boleh kosong";
-        }
-        return null;
-      },
-    );
-  }
-
-  DropdownButtonFormField<String> inputGender() {
-    return DropdownButtonFormField<String>(
-      decoration: const InputDecoration(
-        filled: true,
-        fillColor: Colors.white,
-        labelText: "Jenis Kelamin",
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
-        ),
-      ),
-      initialValue: gender,
-      hint: const Text("Pilih Jenis Kelamin"),
-      items: [
-        DropdownMenuItem(value: "", child: Text("Pilih Jenis Kelamin")),
-        DropdownMenuItem(value: "L", child: Text("Laki-laki")),
-        DropdownMenuItem(value: "P", child: Text("Perempuan")),
-      ],
-      validator: (v) => v == null ? "Gender is required" : null,
-
-      onChanged: (v) {
-        setState(() => gender = v);
-      },
-    );
-  }
-
-  TextformFunction inputPassword() {
-    return TextformFunction(
-      hint: "Kata Sandi",
-      isPassword: true,
-      controller: passwordC,
-      validator: (v) {
-        if (v == null || v.isEmpty) {
-          return "Kata sandi tidak boleh kosong";
-        } else if (v.length < 6) {
-          return "Kata sandi minimal 6 karakter";
-        }
-        return null;
-      },
-    );
-  }
-
-  TextformFunction inputEmail() {
-    return TextformFunction(
-      hint: "Email",
-      controller: emailC,
-      validator: (v) {
-        if (v == null || v.isEmpty) {
-          return "Email tidak boleh kosong";
-        } else if (!v.contains('@')) {
-          return "Email tidak valid";
-        }
-        return null;
-      },
-    );
-  }
-
-  TextformFunction inputName() {
-    return TextformFunction(
-      hint: "Nama",
-      controller: nameC,
-      validator: (v) {
-        if (v == null || v.isEmpty) {
-          return "Nama tidak boleh kosong";
-        }
-        return null;
-      },
-    );
-  }
-
   Container buildBackground() {
     return Container(
       height: double.infinity,
       width: double.infinity,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         image: DecorationImage(
           image: AssetImage('assets/images/background/background_ariq.png'),
           fit: BoxFit.fill,
