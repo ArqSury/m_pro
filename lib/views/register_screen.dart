@@ -9,7 +9,6 @@ import 'package:m_pro/function/button_function.dart';
 import 'package:m_pro/function/textform_function.dart';
 import 'package:m_pro/models/register_request.dart';
 import 'package:m_pro/services/api.dart';
-import 'package:m_pro/views/login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
