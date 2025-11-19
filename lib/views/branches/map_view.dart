@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class MapView extends StatefulWidget {
-  final double checkInLat;
-  final double checkInLng;
+  final double? checkInLat;
+  final double? checkInLng;
   final double? checkOutLat;
   final double? checkOutLng;
 
   const MapView({
     super.key,
-    required this.checkInLat,
-    required this.checkInLng,
+    this.checkInLat,
+    this.checkInLng,
     this.checkOutLat,
     this.checkOutLng,
   });
@@ -24,7 +24,18 @@ class _MapViewState extends State<MapView> {
 
   @override
   Widget build(BuildContext context) {
-    final LatLng checkInPos = LatLng(widget.checkInLat, widget.checkInLng);
+    if (widget.checkInLat == null || widget.checkInLng == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("Lokasi Absen")),
+        body: const Center(
+          child: Text(
+            "Tidak ada data lokasi untuk hari ini.",
+            style: TextStyle(fontSize: 16),
+          ),
+        ),
+      );
+    }
+    final LatLng checkInPos = LatLng(widget.checkInLat!, widget.checkInLng!);
     final LatLng? checkOutPos =
         (widget.checkOutLat != null && widget.checkOutLng != null)
         ? LatLng(widget.checkOutLat!, widget.checkOutLng!)

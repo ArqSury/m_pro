@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:m_pro/models/history_absen.dart';
 import 'package:m_pro/models/register_request.dart';
 import 'package:m_pro/models/user_model.dart';
 import 'package:m_pro/services/shared_preferences/preferences_handler.dart';
@@ -267,5 +268,54 @@ class AuthAPI {
     if (res.statusCode != 200) {
       throw Exception(data["message"] ?? "Gagal mengirim izin");
     }
+  }
+
+  static Future<List<HistoryAbsen>> getAbsenHistory() async {
+    final token = await PreferencesHandler.getToken();
+
+    final res = await http.get(
+      Uri.parse("${Endpoint.baseUrl}/absen/history"),
+      headers: {"Authorization": "Bearer $token"},
+    );
+
+    print("HISTORY RESPONSE: ${res.statusCode} - ${res.body}");
+
+    if (res.statusCode != 200) {
+      throw Exception("Gagal mengambil riwayat");
+    }
+
+    final json = jsonDecode(res.body);
+
+    if (json["data"] == null) return [];
+
+    List list = json["data"];
+
+    return list.map((e) => HistoryAbsen.fromJson(e)).toList();
+  }
+
+  static Future<List<dynamic>> getHistory({String? start, String? end}) async {
+    final token = await PreferencesHandler.getToken();
+
+    final params = {
+      if (start != null) "start": start,
+      if (end != null) "end": end,
+    };
+
+    final uri = Uri.parse(
+      "${Endpoint.baseUrl}/absen/history",
+    ).replace(queryParameters: params);
+
+    final res = await http.get(
+      uri,
+      headers: {"Accept": "application/json", "Authorization": "Bearer $token"},
+    );
+
+    final body = jsonDecode(res.body);
+
+    if (res.statusCode != 200) {
+      return [];
+    }
+
+    return body["data"] ?? [];
   }
 }
