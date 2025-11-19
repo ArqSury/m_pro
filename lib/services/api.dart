@@ -318,4 +318,26 @@ class AuthAPI {
 
     return body["data"] ?? [];
   }
+
+  static Future<List<Map<String, dynamic>>> getTrainingList() async {
+    final url = Uri.parse(Endpoint.trainingID);
+    final res = await http.get(url);
+
+    if (res.statusCode != 200) return [];
+
+    final body = jsonDecode(res.body);
+
+    return List<Map<String, dynamic>>.from(body["data"]);
+  }
+
+  static Future<List<Map<String, dynamic>>> getBatchList() async {
+    final url = Uri.parse(Endpoint.batchID);
+    final res = await http.get(url);
+
+    if (res.statusCode != 200) return [];
+
+    final body = jsonDecode(res.body);
+
+    return List<Map<String, dynamic>>.from(body["data"]);
+  }
 }

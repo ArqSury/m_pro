@@ -18,19 +18,64 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  // LIST DATA
+  List<Map<String, dynamic>> batchList = [];
+  List<Map<String, dynamic>> trainingList = [];
+
+  // SELECTED VALUES
+  int? selectedBatchId;
+  int? selectedTrainingId;
+
+  // UI STATE
+  bool loadingDropdown = true;
+  bool loadingRegister = false;
+
+  // CONTROLLERS
   final nameC = TextEditingController();
   final emailC = TextEditingController();
   final passwordC = TextEditingController();
-  final batchC = TextEditingController();
-  final trainingC = TextEditingController();
 
+  // FORM & FIELDS
   final formKey = GlobalKey<FormState>();
-  String? gender;
-  bool isLoading = false;
+  String? selectedGender;
 
+  // PHOTO
   File? selectedImage;
   String? base64Photo;
 
+  @override
+  void initState() {
+    super.initState();
+    loadDropdownData();
+  }
+
+  // -------------------------------------------------------------
+  // LOAD BATCH + TRAINING LIST
+  // -------------------------------------------------------------
+  Future loadDropdownData() async {
+    try {
+      batchList = await AuthAPI.getBatchList();
+    } catch (e) {
+      Fluttertoast.showToast(msg: "Gagal memuat batch");
+    }
+
+    setState(() => loadingDropdown = false);
+  }
+
+  // -------------------------------------------------------------
+  // LOAD TRAININGS based on selected batch
+  // -------------------------------------------------------------
+  void loadTrainingForBatch(int batchId) {
+    final selected = batchList.firstWhere((b) => b["id"] == batchId);
+    trainingList = List<Map<String, dynamic>>.from(selected["trainings"]);
+
+    selectedTrainingId = null; // Reset training picker
+    setState(() {});
+  }
+
+  // -------------------------------------------------------------
+  // PICK PROFILE PHOTO
+  // -------------------------------------------------------------
   Future pickImage() async {
     final picker = ImagePicker();
     final XFile? img = await picker.pickImage(source: ImageSource.gallery);
@@ -44,19 +89,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
       selectedImage = File(img.path);
       base64Photo = "data:image/png;base64,$base64Str";
     });
-
-    Fluttertoast.showToast(msg: "Foto dipilih");
   }
 
-  register() async {
+  // -------------------------------------------------------------
+  // REGISTER USER
+  // -------------------------------------------------------------
+  Future register() async {
     if (!formKey.currentState!.validate()) return;
 
-    if (gender == null) {
+    if (selectedGender == null) {
       Fluttertoast.showToast(msg: "Pilih jenis kelamin");
       return;
     }
+    if (selectedBatchId == null) {
+      Fluttertoast.showToast(msg: "Pilih batch");
+      return;
+    }
+    if (selectedTrainingId == null) {
+      Fluttertoast.showToast(msg: "Pilih jenis pelatihan");
+      return;
+    }
 
-    setState(() => isLoading = true);
+    setState(() => loadingRegister = true);
 
     try {
       await AuthAPI.registerUser(
@@ -64,120 +118,125 @@ class _RegisterScreenState extends State<RegisterScreen> {
           name: nameC.text,
           email: emailC.text,
           password: passwordC.text,
-          jenisKelamin: gender!,
-          batchId: int.parse(batchC.text),
-          trainingId: int.parse(trainingC.text),
+          jenisKelamin: selectedGender!,
+          batchId: selectedBatchId!,
+          trainingId: selectedTrainingId!,
           profilePhoto: base64Photo,
         ),
       );
-      print("REGISTER START");
-      print("REGISTER DONE");
 
       Fluttertoast.showToast(msg: "Registrasi berhasil");
-
-      if (mounted) {
-        Navigator.pop(context);
-      }
+      if (mounted) Navigator.pop(context);
     } catch (e) {
-      Fluttertoast.showToast(msg: e.toString().replaceAll("Exception:", ""));
-    } finally {
-      if (mounted) setState(() => isLoading = false);
+      Fluttertoast.showToast(
+        msg: e.toString().replaceAll("Exception:", "").trim(),
+      );
     }
+
+    if (mounted) setState(() => loadingRegister = false);
   }
 
+  // -------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
         body: Stack(
           alignment: AlignmentDirectional.center,
-          children: [buildBackground(), buildLayer()],
+          children: [buildBackground(), buildFormLayer()],
         ),
       ),
     );
   }
 
-  Padding buildLayer() {
+  // -------------------------------------------------------------
+  // UI LAYER
+  // -------------------------------------------------------------
+  Padding buildFormLayer() {
     return Padding(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.all(20),
       child: Form(
         key: formKey,
-        child: Center(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              children: [
-                const Text(
-                  'Daftar',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 40,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                inputName(),
-                const SizedBox(height: 16),
-                inputEmail(),
-                const SizedBox(height: 16),
-                inputPassword(),
-                const SizedBox(height: 16),
-                inputGender(),
-                const SizedBox(height: 16),
-                inputBatchID(),
-                const SizedBox(height: 16),
-                inputTrainingID(),
-                const SizedBox(height: 16),
-                inputProfilePhoto(),
-
-                const SizedBox(height: 28),
-
-                ButtonFunction(
-                  text: isLoading ? "Loading..." : "Daftar",
-                  height: 50,
-                  width: double.infinity,
-                  backgroundColor: AppColor.button,
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            children: [
+              const Text(
+                "Daftar",
+                style: TextStyle(
                   color: Colors.white,
-                  onPressed: isLoading ? null : register,
+                  fontSize: 38,
+                  fontWeight: FontWeight.bold,
                 ),
+              ),
 
-                const SizedBox(height: 40),
-                const Divider(color: Colors.white),
+              const SizedBox(height: 20),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      'Sudah punya akun?',
-                      style: TextStyle(color: Colors.white),
+              inputName(),
+              const SizedBox(height: 16),
+
+              inputEmail(),
+              const SizedBox(height: 16),
+
+              inputPassword(),
+              const SizedBox(height: 16),
+
+              inputGender(),
+              const SizedBox(height: 16),
+
+              inputBatchDropdown(),
+              const SizedBox(height: 16),
+
+              inputTrainingDropdown(),
+              const SizedBox(height: 16),
+
+              inputProfilePhoto(),
+              const SizedBox(height: 28),
+
+              ButtonFunction(
+                text: loadingRegister ? "Loading..." : "Daftar",
+                height: 50,
+                width: double.infinity,
+                backgroundColor: AppColor.button,
+                color: Colors.white,
+                onPressed: loadingRegister ? null : register,
+              ),
+
+              const SizedBox(height: 40),
+              const Divider(color: Colors.white),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    "Sudah punya akun?",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      "Masuk",
+                      style: TextStyle(color: Colors.lightBlueAccent),
                     ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      child: const Text(
-                        'Masuk',
-                        style: TextStyle(color: Colors.lightBlueAccent),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
+  // -------------------------------------------------------------
+  // INPUT COMPONENTS
+  // -------------------------------------------------------------
   TextformFunction inputName() {
     return TextformFunction(
       hint: "Nama",
       controller: nameC,
-      validator: (v) {
-        if (v == null || v.isEmpty) return "Nama tidak boleh kosong";
-        return null;
-      },
+      validator: (v) =>
+          v == null || v.isEmpty ? "Nama tidak boleh kosong" : null,
     );
   }
 
@@ -187,7 +246,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       controller: emailC,
       validator: (v) {
         if (v == null || v.isEmpty) return "Email tidak boleh kosong";
-        if (!v.contains('@')) return "Email tidak valid";
+        if (!v.contains("@")) return "Email tidak valid";
         return null;
       },
     );
@@ -196,10 +255,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   TextformFunction inputPassword() {
     return TextformFunction(
       hint: "Kata Sandi",
-      isPassword: true,
       controller: passwordC,
+      isPassword: true,
       validator: (v) {
-        if (v == null || v.isEmpty) return "Kata sandi tidak boleh kosong";
+        if (v == null || v.isEmpty) return "Password tidak boleh kosong";
         if (v.length < 6) return "Minimal 6 karakter";
         return null;
       },
@@ -212,49 +271,90 @@ class _RegisterScreenState extends State<RegisterScreen> {
         filled: true,
         fillColor: Colors.white,
         labelText: "Jenis Kelamin",
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
-        ),
+        border: OutlineInputBorder(),
       ),
-      value: gender,
-      hint: const Text("Pilih Jenis Kelamin"),
+      value: selectedGender,
       items: const [
         DropdownMenuItem(value: "L", child: Text("Laki-laki")),
         DropdownMenuItem(value: "P", child: Text("Perempuan")),
       ],
-      validator: (v) => v == null ? "Jenis kelamin wajib dipilih" : null,
-      onChanged: (v) => setState(() => gender = v),
+      onChanged: (v) => setState(() => selectedGender = v),
+      validator: (v) => v == null ? "Pilih jenis kelamin" : null,
     );
   }
 
-  TextformFunction inputBatchID() {
-    return TextformFunction(
-      hint: "Batch ID",
-      isNumber: true,
-      controller: batchC,
-      validator: (v) =>
-          v == null || v.isEmpty ? "Batch ID tidak boleh kosong" : null,
+  Widget inputBatchDropdown() {
+    if (loadingDropdown) {
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
+    }
+
+    return DropdownButtonFormField<int>(
+      decoration: const InputDecoration(
+        filled: true,
+        fillColor: Colors.white,
+        labelText: "Batch Pelatihan",
+        border: OutlineInputBorder(),
+      ),
+      value: selectedBatchId,
+      items: batchList.map((b) {
+        return DropdownMenuItem<int>(
+          value: (b["id"] as num).toInt(),
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.7,
+            child: Text(
+              "Batch ${b["batch_ke"]} (${b["start_date"]} - ${b["end_date"]})",
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        );
+      }).toList(),
+      onChanged: (v) {
+        setState(() {
+          selectedBatchId = v;
+          loadTrainingForBatch(v!);
+        });
+      },
+      validator: (v) => v == null ? "Batch wajib dipilih" : null,
     );
   }
 
-  TextformFunction inputTrainingID() {
-    return TextformFunction(
-      hint: "Training ID",
-      isNumber: true,
-      controller: trainingC,
-      validator: (v) =>
-          v == null || v.isEmpty ? "Training ID tidak boleh kosong" : null,
+  Widget inputTrainingDropdown() {
+    return DropdownButtonFormField<int>(
+      decoration: const InputDecoration(
+        filled: true,
+        fillColor: Colors.white,
+        labelText: "Pelatihan",
+        border: OutlineInputBorder(),
+      ),
+      value: selectedTrainingId,
+      items: trainingList.isEmpty
+          ? [] // no items yet
+          : trainingList.map((t) {
+              return DropdownMenuItem<int>(
+                value: (t["id"] as num).toInt(),
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.7,
+                  child: Text(t["title"], overflow: TextOverflow.ellipsis),
+                ),
+              );
+            }).toList(),
+      onChanged: trainingList.isEmpty
+          ? null // disable before batch selected
+          : (v) => setState(() => selectedTrainingId = v),
+      validator: (v) => v == null ? "Pilih pelatihan" : null,
     );
   }
 
-  Container inputProfilePhoto() {
+  Widget inputProfilePhoto() {
     return Container(
       height: 160,
       width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: const BorderRadius.all(Radius.circular(12)),
-        border: Border.all(color: Colors.black),
+        borderRadius: BorderRadius.circular(12),
         color: Colors.white,
+        border: Border.all(color: Colors.black),
       ),
       child: InkWell(
         onTap: pickImage,
@@ -263,7 +363,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           children: [
             CircleAvatar(
               radius: 50,
-              backgroundColor: Colors.grey.shade300,
               backgroundImage: selectedImage != null
                   ? FileImage(selectedImage!)
                   : null,
@@ -279,13 +378,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Container buildBackground() {
+  // -------------------------------------------------------------
+  // BACKGROUND IMAGE
+  // -------------------------------------------------------------
+  Widget buildBackground() {
     return Container(
-      height: double.infinity,
-      width: double.infinity,
       decoration: const BoxDecoration(
         image: DecorationImage(
-          image: AssetImage('assets/images/background/background_ariq.png'),
+          image: AssetImage("assets/images/background/background_ariq.png"),
           fit: BoxFit.fill,
         ),
       ),

@@ -11,4 +11,6 @@ class Endpoint {
   static const String absenStats = "$baseUrl/absen/stats";
   static const String izin = "$baseUrl/izin";
   static const String absenHistory = "$baseUrl/absen/history";
+  static const String batchID = "$baseUrl/batches";
+  static const String trainingID = "$baseUrl/trainings";
 }

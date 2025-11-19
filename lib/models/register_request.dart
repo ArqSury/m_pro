@@ -3,18 +3,18 @@ class RegisterRequest {
   final String email;
   final String password;
   final String jenisKelamin;
-  final String? profilePhoto;
   final int batchId;
   final int trainingId;
+  final String? profilePhoto;
 
   RegisterRequest({
     required this.name,
     required this.email,
     required this.password,
     required this.jenisKelamin,
-    this.profilePhoto,
     required this.batchId,
     required this.trainingId,
+    this.profilePhoto,
   });
 
   Map<String, dynamic> toJson() {
@@ -23,9 +23,9 @@ class RegisterRequest {
       "email": email,
       "password": password,
       "jenis_kelamin": jenisKelamin,
-      "profile_photo": profilePhoto,
       "batch_id": batchId,
       "training_id": trainingId,
+      if (profilePhoto != null) "profile_photo": profilePhoto,
     };
   }
 }
