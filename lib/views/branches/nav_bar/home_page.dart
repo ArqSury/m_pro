@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:m_pro/function/map_function.dart';
 import 'package:m_pro/services/api.dart';
 import 'package:m_pro/models/user_model.dart';
+import 'package:m_pro/services/shared_preferences/preferences_handler.dart';
+import 'package:m_pro/views/branches/map_view.dart';
 import 'package:m_pro/views/branches/permission.dart';
 
 class HomePage extends StatefulWidget {
@@ -24,6 +24,11 @@ class _HomePageState extends State<HomePage> {
   Map<String, dynamic>? absenToday;
   Map<String, dynamic>? absenStats;
 
+  double? savedCheckInLat;
+  double? savedCheckInLng;
+  double? savedCheckOutLat;
+  double? savedCheckOutLng;
+
   @override
   void initState() {
     super.initState();
@@ -35,8 +40,29 @@ class _HomePageState extends State<HomePage> {
       UserModel profile = await AuthAPI.getProfile();
       absenToday = await AuthAPI.getAbsenToday();
       absenStats = await AuthAPI.getAbsenStats();
-
       userName = profile.data?.name ?? "User";
+
+      // Load saved GPS (do NOT delete)
+      savedCheckInLat = await PreferencesHandler.getDouble("check_in_lat");
+      savedCheckInLng = await PreferencesHandler.getDouble("check_in_lng");
+      savedCheckOutLat = await PreferencesHandler.getDouble("check_out_lat");
+      savedCheckOutLng = await PreferencesHandler.getDouble("check_out_lng");
+
+      final today = DateFormat("yyyy-MM-dd").format(DateTime.now());
+      final serverDate = absenToday?["attendance_date"];
+
+      if (serverDate != today) {
+        // New day -> clear old map
+        await PreferencesHandler.remove("check_in_lat");
+        await PreferencesHandler.remove("check_in_lng");
+        await PreferencesHandler.remove("check_out_lat");
+        await PreferencesHandler.remove("check_out_lng");
+
+        savedCheckInLat = null;
+        savedCheckInLng = null;
+        savedCheckOutLat = null;
+        savedCheckOutLng = null;
+      }
     } catch (e) {
       Fluttertoast.showToast(msg: "Gagal memuat data");
     }
@@ -44,31 +70,43 @@ class _HomePageState extends State<HomePage> {
     if (mounted) setState(() => isLoadingData = false);
   }
 
-  Future<Position> getLocation() async {
-    LocationPermission perm = await Geolocator.requestPermission();
-    if (perm == LocationPermission.denied ||
-        perm == LocationPermission.deniedForever) {
-      throw Exception("Izin lokasi ditolak");
-    }
-    return await Geolocator.getCurrentPosition();
-  }
-
+  // ---------------------- CHECK IN ----------------------------
   Future<void> checkIn() async {
     if (absenToday != null) {
       Fluttertoast.showToast(msg: "Anda sudah absen hari ini");
       return;
     }
 
+    final selectedLocation = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => MapFunction.pickLocation()),
+    );
+
+    if (selectedLocation == null) {
+      Fluttertoast.showToast(msg: "Lokasi tidak dipilih");
+      return;
+    }
+
     setState(() => loadingCheckIn = true);
 
     try {
-      final pos = await getLocation();
       await AuthAPI.absenCheckIn(
-        latitude: pos.latitude,
-        longitude: pos.longitude,
+        latitude: selectedLocation.latitude,
+        longitude: selectedLocation.longitude,
       );
+
+      // Save locally
+      await PreferencesHandler.saveDouble(
+        "check_in_lat",
+        selectedLocation.latitude,
+      );
+      await PreferencesHandler.saveDouble(
+        "check_in_lng",
+        selectedLocation.longitude,
+      );
+
       Fluttertoast.showToast(msg: "Absen Masuk Berhasil");
-      loadInitialData();
+      await loadInitialData();
     } catch (e) {
       Fluttertoast.showToast(msg: e.toString());
     }
@@ -76,6 +114,7 @@ class _HomePageState extends State<HomePage> {
     setState(() => loadingCheckIn = false);
   }
 
+  // ---------------------- CHECK OUT ----------------------------
   Future<void> checkOut() async {
     if (absenToday == null) {
       Fluttertoast.showToast(msg: "Anda belum absen masuk");
@@ -87,16 +126,36 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
+    final selectedLocation = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => MapFunction.pickLocation()),
+    );
+
+    if (selectedLocation == null) {
+      Fluttertoast.showToast(msg: "Lokasi tidak dipilih");
+      return;
+    }
+
     setState(() => loadingCheckOut = true);
 
     try {
-      final pos = await getLocation();
       await AuthAPI.absenCheckOut(
-        latitude: pos.latitude,
-        longitude: pos.longitude,
+        latitude: selectedLocation.latitude,
+        longitude: selectedLocation.longitude,
       );
+
+      // Save locally
+      await PreferencesHandler.saveDouble(
+        "check_out_lat",
+        selectedLocation.latitude,
+      );
+      await PreferencesHandler.saveDouble(
+        "check_out_lng",
+        selectedLocation.longitude,
+      );
+
       Fluttertoast.showToast(msg: "Absen Pulang Berhasil");
-      loadInitialData();
+      await loadInitialData();
     } catch (e) {
       Fluttertoast.showToast(msg: e.toString());
     }
@@ -104,6 +163,7 @@ class _HomePageState extends State<HomePage> {
     setState(() => loadingCheckOut = false);
   }
 
+  // ---------------------- UI ----------------------------
   @override
   Widget build(BuildContext context) {
     if (isLoadingData) {
@@ -128,12 +188,14 @@ class _HomePageState extends State<HomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             FloatingActionButton.extended(
+              heroTag: "checkInBtn",
               backgroundColor: Colors.green,
               onPressed: loadingCheckIn ? null : checkIn,
               label: Text(loadingCheckIn ? "..." : "Hadir"),
               icon: const Icon(Icons.login),
             ),
             FloatingActionButton.extended(
+              heroTag: "izinBtn",
               backgroundColor: Colors.orange,
               label: const Text("Izin"),
               icon: const Icon(Icons.medical_information),
@@ -145,6 +207,7 @@ class _HomePageState extends State<HomePage> {
               },
             ),
             FloatingActionButton.extended(
+              heroTag: "checkOutBtn",
               backgroundColor: Colors.red,
               onPressed: loadingCheckOut ? null : checkOut,
               label: Text(loadingCheckOut ? "..." : "Pulang"),
@@ -152,6 +215,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
+
         body: Padding(
           padding: const EdgeInsets.all(20),
           child: SingleChildScrollView(
@@ -161,12 +225,12 @@ class _HomePageState extends State<HomePage> {
                 Text(
                   "$greeting, $userName!",
                   style: const TextStyle(
-                    fontSize: 25,
+                    fontSize: 26,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(now, style: const TextStyle(fontSize: 16)),
-                const SizedBox(height: 22),
+                const SizedBox(height: 20),
                 Card(
                   elevation: 3,
                   shape: RoundedRectangleBorder(
@@ -175,25 +239,38 @@ class _HomePageState extends State<HomePage> {
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: getStatusColor(status),
-                      child: Icon(
-                        Icons.circle,
-                        color: getStatusColor(status),
-                        size: 16,
-                      ),
                     ),
                     title: Text(
-                      "Status Hari Ini: ${getStatusText(status)}",
+                      "Status Hari Ini:\n${getStatusText(status)}",
                       style: TextStyle(
                         color: getStatusColor(status),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     subtitle: Text(
-                      "Masuk: $checkInTime • Pulang: $checkOutTime",
+                      "Masuk: $checkInTime \nPulang: $checkOutTime",
+                    ),
+
+                    trailing: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => MapView(
+                              checkInLat: savedCheckInLat!,
+                              checkInLng: savedCheckInLng!,
+                              checkOutLat: savedCheckOutLat,
+                              checkOutLng: savedCheckOutLng,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: Icon(Icons.map),
+                      label: Text("Lihat\nLokasi"),
                     ),
                   ),
                 ),
-                SizedBox(height: 15),
+                const SizedBox(height: 15),
                 if (absenStats != null)
                   Card(
                     elevation: 3,
@@ -201,85 +278,11 @@ class _HomePageState extends State<HomePage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: ListTile(
-                      title: const Text("📊 Statistik Bulan Ini"),
+                      leading: Icon(Icons.bar_chart),
+                      title: const Text("Statistik Bulan Ini"),
                       subtitle: Text(
                         "Total Absen: ${absenStats!["total_absen"]}\n"
-                        "Hadir: ${absenStats!["total_masuk"]} | "
-                        "Izin: ${absenStats!["total_izin"]}",
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 15),
-                if (absenToday?["check_in_lat"] != null)
-                  SizedBox(
-                    height: 180,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: GoogleMap(
-                        mapType: MapType.normal,
-                        initialCameraPosition: CameraPosition(
-                          target: LatLng(
-                            (absenToday?["check_in_lat"] as num).toDouble(),
-                            (absenToday?["check_in_lng"] as num).toDouble(),
-                          ),
-                          zoom: 16,
-                        ),
-                        markers: {
-                          /// Marker CHECK-IN
-                          Marker(
-                            markerId: const MarkerId("checkin"),
-                            position: LatLng(
-                              (absenToday?["check_in_lat"] as num).toDouble(),
-                              (absenToday?["check_in_lng"] as num).toDouble(),
-                            ),
-                            icon: BitmapDescriptor.defaultMarkerWithHue(
-                              BitmapDescriptor.hueGreen,
-                            ),
-                            infoWindow: const InfoWindow(
-                              title: "Lokasi Check-In",
-                            ),
-                          ),
-
-                          /// Marker CHECK-OUT jika ada
-                          if (absenToday?["check_out_lat"] != null &&
-                              absenToday?["check_out_lng"] != null)
-                            Marker(
-                              markerId: const MarkerId("checkout"),
-                              position: LatLng(
-                                (absenToday?["check_out_lat"] as num)
-                                    .toDouble(),
-                                (absenToday?["check_out_lng"] as num)
-                                    .toDouble(),
-                              ),
-                              icon: BitmapDescriptor.defaultMarkerWithHue(
-                                BitmapDescriptor.hueRed,
-                              ),
-                              infoWindow: const InfoWindow(
-                                title: "Lokasi Check-Out",
-                              ),
-                            ),
-                        },
-                        zoomControlsEnabled: false,
-                        myLocationEnabled: false,
-                        onTap: (_) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => MapFunction(
-                                checkInLat: (absenToday?["check_in_lat"] as num)
-                                    .toDouble(),
-                                checkInLng: (absenToday?["check_in_lng"] as num)
-                                    .toDouble(),
-                                checkOutLat:
-                                    (absenToday?["check_out_lat"] as num?)
-                                        ?.toDouble(),
-                                checkOutLng:
-                                    (absenToday?["check_out_lng"] as num?)
-                                        ?.toDouble(),
-                              ),
-                            ),
-                          );
-                        },
+                        "Hadir: ${absenStats!["total_masuk"]} | Izin: ${absenStats!["total_izin"]}",
                       ),
                     ),
                   ),

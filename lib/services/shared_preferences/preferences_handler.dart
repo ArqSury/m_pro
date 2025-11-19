@@ -33,4 +33,19 @@ class PreferencesHandler {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
   }
+
+  static Future<void> saveDouble(String key, double value) async {
+    final pref = await SharedPreferences.getInstance();
+    await pref.setDouble(key, value);
+  }
+
+  static Future<double?> getDouble(String key) async {
+    final pref = await SharedPreferences.getInstance();
+    return pref.getDouble(key);
+  }
+
+  static Future<void> remove(String key) async {
+    final pref = await SharedPreferences.getInstance();
+    await pref.remove(key);
+  }
 }

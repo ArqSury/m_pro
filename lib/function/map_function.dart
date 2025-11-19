@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 
 class MapFunction extends StatefulWidget {
   const MapFunction({
     super.key,
-    this.checkInLat,
-    this.checkInLng,
+    required this.checkInLat,
+    required this.checkInLng,
     this.checkOutLat,
     this.checkOutLng,
   });
-
-  final double? checkInLat;
-  final double? checkInLng;
+  final double checkInLat;
+  final double checkInLng;
   final double? checkOutLat;
   final double? checkOutLng;
+
+  MapFunction.pickLocation({super.key})
+    : checkInLat = 0,
+      checkInLng = 0,
+      checkOutLat = null,
+      checkOutLng = null;
 
   @override
   State<MapFunction> createState() => _MapFunctionState();
@@ -21,60 +27,92 @@ class MapFunction extends StatefulWidget {
 
 class _MapFunctionState extends State<MapFunction> {
   GoogleMapController? mapController;
-  Set<Marker> markers = <Marker>{};
+  LatLng? selectedLocation;
 
   @override
   void initState() {
     super.initState();
-    setMarkers();
+    _getLocation();
   }
 
-  void setMarkers() {
-    if (widget.checkInLat != null && widget.checkInLng != null) {
-      markers.add(
-        Marker(
-          markerId: const MarkerId("checkin"),
-          position: LatLng(widget.checkInLat!, widget.checkInLng!),
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            BitmapDescriptor.hueGreen,
-          ),
-          infoWindow: const InfoWindow(title: "Lokasi Check-In"),
-        ),
-      );
-    }
-    if (widget.checkOutLat != null && widget.checkOutLng != null) {
-      markers.add(
-        Marker(
-          markerId: const MarkerId("checkout"),
-          position: LatLng(widget.checkOutLat!, widget.checkOutLng!),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-          infoWindow: const InfoWindow(title: "Lokasi Check-Out"),
-        ),
-      );
+  LatLng defaultLocation = const LatLng(-6.2, 106.816666);
+
+  Future<void> _getLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        await Geolocator.openLocationSettings();
+        throw Exception("Location service disabled");
+      }
+
+      LocationPermission perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) {
+        perm = await Geolocator.requestPermission();
+        if (perm != LocationPermission.always &&
+            perm != LocationPermission.whileInUse) {
+          throw Exception("Permission denied");
+        }
+      }
+
+      Position pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      ).timeout(const Duration(seconds: 5));
+
+      setState(() {
+        selectedLocation = LatLng(pos.latitude, pos.longitude);
+      });
+
+      mapController?.animateCamera(CameraUpdate.newLatLng(selectedLocation!));
+    } catch (e) {
+      setState(() {
+        selectedLocation = defaultLocation;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.checkInLat == null || widget.checkInLng == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text("Lokasi Absen")),
-        body: const Center(
-          child: Text("Belum ada data lokasi absen untuk hari ini"),
-        ),
-      );
-    }
-
-    final center = LatLng(widget.checkInLat!, widget.checkInLng!);
-
     return Scaffold(
-      appBar: AppBar(title: const Text("Lokasi Absen")),
-      body: GoogleMap(
-        initialCameraPosition: CameraPosition(target: center, zoom: 16),
-        markers: markers,
-        onMapCreated: (controller) => mapController = controller,
-        myLocationEnabled: true,
-      ),
+      appBar: AppBar(title: const Text("Pilih Lokasi")),
+      body: selectedLocation == null
+          ? const Center(child: CircularProgressIndicator())
+          : Stack(
+              children: [
+                GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: selectedLocation!,
+                    zoom: 16,
+                  ),
+                  myLocationEnabled: true,
+                  onMapCreated: (controller) => mapController = controller,
+                  onCameraMove: (pos) {
+                    setState(() {
+                      selectedLocation = pos.target;
+                    });
+                  },
+                ),
+
+                const Center(
+                  child: Icon(Icons.location_pin, size: 50, color: Colors.red),
+                ),
+
+                Positioned(
+                  bottom: 25,
+                  left: 40,
+                  right: 40,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.all(14),
+                    ),
+                    child: const Text("Gunakan Lokasi Ini"),
+                    onPressed: () {
+                      Navigator.pop(context, selectedLocation);
+                    },
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }
