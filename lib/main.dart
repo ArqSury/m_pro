@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:m_pro/views/branches/nav_bar/profile_page.dart';
 import 'package:m_pro/views/login_screen.dart';
+import 'package:m_pro/views/main_screen.dart';
+import 'package:m_pro/views/start_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,7 +38,12 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const LoginScreen(),
+      routes: {
+        "/login": (_) => const LoginScreen(),
+        "/home": (_) => const MainScreen(), // <-- Main navigation screen
+        "/profile": (_) => const ProfilePage(),
+      },
+      home: const StartScreen(),
     );
   }
 }

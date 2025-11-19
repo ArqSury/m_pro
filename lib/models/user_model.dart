@@ -23,6 +23,11 @@ class Data {
   final String? name;
   final String? email;
   final dynamic emailVerifiedAt;
+
+  // Backend sometimes does NOT send these fields, so MUST be optional
+  final String? profilePhoto;
+  final String? profilePhotoUrl;
+
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -31,6 +36,8 @@ class Data {
     this.name,
     this.email,
     this.emailVerifiedAt,
+    this.profilePhoto,
+    this.profilePhotoUrl,
     this.createdAt,
     this.updatedAt,
   });
@@ -40,6 +47,11 @@ class Data {
     name: json["name"],
     email: json["email"],
     emailVerifiedAt: json["email_verified_at"],
+
+    // Backend may NOT send these (null OK)
+    profilePhoto: json["profile_photo"],
+    profilePhotoUrl: json["profile_photo_url"],
+
     createdAt: json["created_at"] == null
         ? null
         : DateTime.parse(json["created_at"]),
@@ -53,6 +65,8 @@ class Data {
     "name": name,
     "email": email,
     "email_verified_at": emailVerifiedAt,
+    "profile_photo": profilePhoto,
+    "profile_photo_url": profilePhotoUrl,
     "created_at": createdAt?.toIso8601String(),
     "updated_at": updatedAt?.toIso8601String(),
   };

@@ -178,7 +178,7 @@ class AuthAPI {
     required double longitude,
   }) async {
     final token = await PreferencesHandler.getToken();
-    final url = Uri.parse("${Endpoint.baseUrl}/absen/check-in");
+    final url = Uri.parse(Endpoint.checkin);
 
     final now = DateTime.now();
     final body = {
@@ -255,7 +255,7 @@ class AuthAPI {
     required String date,
     required String alasan,
   }) async {
-    final url = Uri.parse("${Endpoint.baseUrl}/absen/izin");
+    final url = Uri.parse(Endpoint.izin);
     final token = await PreferencesHandler.getToken();
 
     final res = await http.post(
@@ -274,7 +274,7 @@ class AuthAPI {
     final token = await PreferencesHandler.getToken();
 
     final res = await http.get(
-      Uri.parse("${Endpoint.baseUrl}/absen/history"),
+      Uri.parse(Endpoint.absenHistory),
       headers: {"Authorization": "Bearer $token"},
     );
 
@@ -302,7 +302,7 @@ class AuthAPI {
     };
 
     final uri = Uri.parse(
-      "${Endpoint.baseUrl}/absen/history",
+      Endpoint.absenHistory,
     ).replace(queryParameters: params);
 
     final res = await http.get(

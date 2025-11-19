@@ -9,4 +9,6 @@ class Endpoint {
   static const String checkout = "$baseUrl/absen/check-out";
   static const String absenToday = "$baseUrl/absen/today";
   static const String absenStats = "$baseUrl/absen/stats";
+  static const String izin = "$baseUrl/izin";
+  static const String absenHistory = "$baseUrl/absen/history";
 }
