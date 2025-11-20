@@ -23,14 +23,10 @@ class Data {
   final String? name;
   final String? email;
   final dynamic emailVerifiedAt;
-
-  // Backend sometimes does NOT send these fields, so MUST be optional
   final String? profilePhoto;
   final String? profilePhotoUrl;
-
   final DateTime? createdAt;
   final DateTime? updatedAt;
-
   Data({
     this.id,
     this.name,
@@ -47,11 +43,8 @@ class Data {
     name: json["name"],
     email: json["email"],
     emailVerifiedAt: json["email_verified_at"],
-
-    // Backend may NOT send these (null OK)
     profilePhoto: json["profile_photo"],
     profilePhotoUrl: json["profile_photo_url"],
-
     createdAt: json["created_at"] == null
         ? null
         : DateTime.parse(json["created_at"]),

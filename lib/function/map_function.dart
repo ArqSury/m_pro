@@ -14,7 +14,6 @@ class MapFunction extends StatefulWidget {
   final double checkInLng;
   final double? checkOutLat;
   final double? checkOutLng;
-
   MapFunction.pickLocation({super.key})
     : checkInLat = 0,
       checkInLng = 0,
@@ -36,7 +35,6 @@ class _MapFunctionState extends State<MapFunction> {
   }
 
   LatLng defaultLocation = const LatLng(-6.2, 106.816666);
-
   Future<void> _getLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -44,7 +42,6 @@ class _MapFunctionState extends State<MapFunction> {
         await Geolocator.openLocationSettings();
         throw Exception("Location service disabled");
       }
-
       LocationPermission perm = await Geolocator.checkPermission();
       if (perm == LocationPermission.denied ||
           perm == LocationPermission.deniedForever) {
@@ -54,15 +51,12 @@ class _MapFunctionState extends State<MapFunction> {
           throw Exception("Permission denied");
         }
       }
-
       Position pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       ).timeout(const Duration(seconds: 5));
-
       setState(() {
         selectedLocation = LatLng(pos.latitude, pos.longitude);
       });
-
       mapController?.animateCamera(CameraUpdate.newLatLng(selectedLocation!));
     } catch (e) {
       setState(() {
@@ -73,46 +67,50 @@ class _MapFunctionState extends State<MapFunction> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Pilih Lokasi")),
-      body: selectedLocation == null
-          ? const Center(child: CircularProgressIndicator())
-          : Stack(
-              children: [
-                GoogleMap(
-                  initialCameraPosition: CameraPosition(
-                    target: selectedLocation!,
-                    zoom: 16,
-                  ),
-                  myLocationEnabled: true,
-                  onMapCreated: (controller) => mapController = controller,
-                  onCameraMove: (pos) {
-                    setState(() {
-                      selectedLocation = pos.target;
-                    });
-                  },
-                ),
-
-                const Center(
-                  child: Icon(Icons.location_pin, size: 50, color: Colors.red),
-                ),
-
-                Positioned(
-                  bottom: 25,
-                  left: 40,
-                  right: 40,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.all(14),
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(title: const Text("Pilih Lokasi")),
+        body: selectedLocation == null
+            ? const Center(child: CircularProgressIndicator())
+            : Stack(
+                children: [
+                  GoogleMap(
+                    initialCameraPosition: CameraPosition(
+                      target: selectedLocation!,
+                      zoom: 16,
                     ),
-                    child: const Text("Gunakan Lokasi Ini"),
-                    onPressed: () {
-                      Navigator.pop(context, selectedLocation);
+                    myLocationEnabled: true,
+                    onMapCreated: (controller) => mapController = controller,
+                    onCameraMove: (pos) {
+                      setState(() {
+                        selectedLocation = pos.target;
+                      });
                     },
                   ),
-                ),
-              ],
-            ),
+                  Center(
+                    child: Icon(
+                      Icons.location_pin,
+                      size: 50,
+                      color: Colors.red,
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 25,
+                    left: 40,
+                    right: 40,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.all(14),
+                      ),
+                      child: const Text("Gunakan Lokasi Ini"),
+                      onPressed: () {
+                        Navigator.pop(context, selectedLocation);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 }

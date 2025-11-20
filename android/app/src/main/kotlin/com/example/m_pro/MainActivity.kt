@@ -1,4 +1,4 @@
-package com.example.m_pro
+package com.ppkd.m_pro
 
 import io.flutter.embedding.android.FlutterActivity
 

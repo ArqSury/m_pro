@@ -4,8 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
+import 'package:m_pro/constant/app_color.dart';
 
 import 'package:m_pro/constant/endpoint.dart';
+import 'package:m_pro/function/button_function.dart';
 import 'package:m_pro/services/api.dart';
 import 'package:m_pro/services/shared_preferences/preferences_handler.dart';
 import 'package:m_pro/models/user_model.dart';
@@ -30,31 +32,22 @@ class _ProfilePageState extends State<ProfilePage> {
     loadProfile();
   }
 
-  // ------------------------------------------------------------
-  // LOAD PROFILE
-  // ------------------------------------------------------------
   Future<void> loadProfile() async {
     try {
       final p = await AuthAPI.getProfile();
-
       if (p.message == "Unauthenticated.") {
         await PreferencesHandler.logout();
         Navigator.pushNamedAndRemoveUntil(context, "/login", (r) => false);
         return;
       }
-
       profile = p;
       nameController.text = p.data?.name ?? "";
     } catch (e) {
       Fluttertoast.showToast(msg: "Gagal memuat profil");
     }
-
     setState(() => loading = false);
   }
 
-  // ------------------------------------------------------------
-  // SHOW NAME EDIT DIALOG
-  // ------------------------------------------------------------
   Future<void> showEditNameDialog() async {
     nameController.text = profile?.data?.name ?? "";
 
@@ -86,16 +79,12 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // ------------------------------------------------------------
-  // UPDATE NAME
-  // ------------------------------------------------------------
   Future<void> updateName() async {
     final newName = nameController.text.trim();
     if (newName.isEmpty) {
       Fluttertoast.showToast(msg: "Nama tidak boleh kosong");
       return;
     }
-
     try {
       final token = await PreferencesHandler.getToken();
 
@@ -107,9 +96,7 @@ class _ProfilePageState extends State<ProfilePage> {
         },
         body: jsonEncode({"name": newName}),
       );
-
       final body = jsonDecode(res.body);
-
       if (res.statusCode == 200) {
         Fluttertoast.showToast(msg: "Nama berhasil diubah");
         await loadProfile();
@@ -121,9 +108,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  // ------------------------------------------------------------
-  // PHOTO PICKER
-  // ------------------------------------------------------------
   Future<void> showPhotoPicker() async {
     showModalBottomSheet(
       context: context,
@@ -164,19 +148,13 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: source);
-
     if (picked == null) return;
-
     final bytes = await picked.readAsBytes();
     final ext = picked.path.split('.').last;
-
     final base64Image = "data:image/$ext;base64,${base64Encode(bytes)}";
-
     setState(() => savingPhoto = true);
-
     try {
       final token = await PreferencesHandler.getToken();
-
       final res = await http.put(
         Uri.parse("${Endpoint.baseUrl}/profile/photo"),
         headers: {
@@ -185,9 +163,7 @@ class _ProfilePageState extends State<ProfilePage> {
         },
         body: jsonEncode({"profile_photo": base64Image}),
       );
-
       final body = jsonDecode(res.body);
-
       if (res.statusCode == 200) {
         Fluttertoast.showToast(msg: "Foto berhasil diperbarui");
         await loadProfile();
@@ -197,22 +173,15 @@ class _ProfilePageState extends State<ProfilePage> {
     } catch (_) {
       Fluttertoast.showToast(msg: "Kesalahan upload foto");
     }
-
     setState(() => savingPhoto = false);
   }
 
-  // ------------------------------------------------------------
-  // LOGOUT (CLEAR TOKEN)
-  // ------------------------------------------------------------
   Future<void> fullLogout() async {
     await PreferencesHandler.logout();
     Fluttertoast.showToast(msg: "Berhasil logout");
     Navigator.pushNamedAndRemoveUntil(context, "/login", (_) => false);
   }
 
-  // ------------------------------------------------------------
-  // EXIT APP (KEEP LOGIN)
-  // ------------------------------------------------------------
   Future<void> exitApp() async {
     showDialog(
       context: context,
@@ -221,21 +190,17 @@ class _ProfilePageState extends State<ProfilePage> {
         content: const Text(
           "Yakin ingin keluar aplikasi?\nLogin Anda tetap tersimpan.",
         ),
-
         actions: [
           TextButton(
             child: const Text("Batal"),
             onPressed: () => Navigator.pop(ctx),
           ),
-
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text("Keluar"),
             onPressed: () {
-              Navigator.pop(ctx); // close dialog
-
+              Navigator.pop(ctx);
               Fluttertoast.showToast(msg: "Keluar (tetap login)");
-
               Future.delayed(const Duration(milliseconds: 200), () {
                 SystemChannels.platform.invokeMethod('SystemNavigator.pop');
               });
@@ -246,94 +211,141 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // ------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     if (loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-
     final data = profile!.data!;
     final created = data.createdAt != null
         ? "${data.createdAt!.day}-${data.createdAt!.month}-${data.createdAt!.year}"
         : "-";
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text("Profil Saya"),
+          centerTitle: true,
+          backgroundColor: AppColor.primary,
+        ),
+        body: Stack(
+          alignment: AlignmentDirectional.center,
+          children: [buildBackground(), buildLayer(data, created)],
+        ),
+      ),
+    );
+  }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text("Profil Saya")),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            // PROFILE PHOTO
-            GestureDetector(
-              onTap: savingPhoto ? null : showPhotoPicker,
-              child: CircleAvatar(
-                radius: 65,
-                backgroundImage:
-                    (data.profilePhotoUrl != null &&
-                        data.profilePhotoUrl!.isNotEmpty)
-                    ? NetworkImage(data.profilePhotoUrl!)
-                    : null,
-                child:
-                    (data.profilePhotoUrl == null ||
-                        data.profilePhotoUrl!.isEmpty)
-                    ? const Icon(Icons.person, size: 70)
-                    : null,
-              ),
+  Widget buildLayer(Data data, String created) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [buildProfile(data), SizedBox(height: 40), buildSetting()],
+      ),
+    );
+  }
+
+  Container buildSetting() {
+    return Container(
+      width: double.infinity,
+      height: 140,
+      margin: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+        boxShadow: [BoxShadow(blurRadius: 12, color: Colors.black)],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          ButtonFunction(
+            text: 'Log Out',
+            color: Colors.orange,
+            height: 40,
+            width: double.infinity,
+            onPressed: fullLogout,
+            fontSize: 28,
+          ),
+          Divider(color: Colors.black),
+          ButtonFunction(
+            text: 'Keluar Aplikasi',
+            color: Colors.red,
+            height: 40,
+            width: double.infinity,
+            onPressed: exitApp,
+            fontSize: 28,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Container buildProfile(Data data) {
+    return Container(
+      width: double.infinity,
+      height: 380,
+      margin: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+        boxShadow: [BoxShadow(blurRadius: 12, color: Colors.black)],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          buildProfilePhoto(data),
+          SizedBox(height: 10),
+          savingPhoto
+              ? Text("Mengupload foto...")
+              : Text("Tap untuk ganti foto"),
+          SizedBox(height: 25),
+          ListTile(
+            leading: Icon(Icons.person),
+            title: Text("Nama"),
+            subtitle: Text(data.name ?? "-"),
+            trailing: IconButton(
+              icon: Icon(Icons.edit),
+              onPressed: showEditNameDialog,
             ),
-            const SizedBox(height: 10),
-            savingPhoto
-                ? const Text("Mengupload foto...")
-                : const Text("Tap untuk ganti foto"),
+          ),
+          ListTile(
+            leading: Icon(Icons.email),
+            title: Text("Email"),
+            subtitle: Text(data.email ?? "-"),
+          ),
+        ],
+      ),
+    );
+  }
 
-            const SizedBox(height: 25),
+  GestureDetector buildProfilePhoto(Data data) {
+    return GestureDetector(
+      onTap: savingPhoto ? null : showPhotoPicker,
+      child: CircleAvatar(
+        radius: 65,
+        backgroundImage:
+            (data.profilePhotoUrl != null && data.profilePhotoUrl!.isNotEmpty)
+            ? NetworkImage(data.profilePhotoUrl!)
+            : null,
+        child: (data.profilePhotoUrl == null || data.profilePhotoUrl!.isEmpty)
+            ? Icon(Icons.person, size: 70)
+            : null,
+      ),
+    );
+  }
 
-            // EMAIL
-            ListTile(
-              leading: const Icon(Icons.email),
-              title: Text(data.email ?? "-"),
-              subtitle: const Text("Email"),
-            ),
-
-            // CREATED DATE
-            ListTile(
-              leading: const Icon(Icons.calendar_month),
-              title: Text(created),
-              subtitle: const Text("Tanggal Bergabung"),
-            ),
-
-            const Divider(height: 40),
-
-            // NAME + EDIT BUTTON
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: Text(data.name ?? "-"),
-              subtitle: const Text("Nama Lengkap"),
-              trailing: IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: showEditNameDialog,
-              ),
-            ),
-
-            const SizedBox(height: 40),
-            const Divider(),
-
-            // LOGOUT
-            ElevatedButton.icon(
-              icon: const Icon(Icons.logout),
-              label: const Text("Logout (Hapus Login)"),
-              onPressed: fullLogout,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            ),
-
-            const SizedBox(height: 10),
-
-            ElevatedButton.icon(
-              icon: const Icon(Icons.exit_to_app),
-              label: const Text("Exit App (Tetap Login)"),
-              onPressed: exitApp,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            ),
+  Container buildBackground() {
+    return Container(
+      height: double.infinity,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColor.button,
+            AppColor.primary,
+            AppColor.success,
+            AppColor.secondary,
           ],
         ),
       ),

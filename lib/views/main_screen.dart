@@ -14,15 +14,17 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedBar = 0;
 
-  static const List<Widget> _navOptions = [
-    HomePage(),
-    AbsencePage(),
-    ProfilePage(),
-  ];
-  void _onBarTapped(int bar) {
-    setState(() {
-      _selectedBar = bar;
-    });
+  Widget _getPage(int index) {
+    switch (index) {
+      case 0:
+        return const HomePage();
+      case 1:
+        return const AbsencePage();
+      case 2:
+        return const ProfilePage();
+      default:
+        return const HomePage();
+    }
   }
 
   @override
@@ -38,9 +40,9 @@ class _MainScreenState extends State<MainScreen> {
           currentIndex: _selectedBar,
           selectedItemColor: Colors.white,
           backgroundColor: AppColor.primary,
-          onTap: _onBarTapped,
+          onTap: (i) => setState(() => _selectedBar = i),
         ),
-        body: Center(child: _navOptions.elementAt(_selectedBar)),
+        body: Center(child: _getPage(_selectedBar)),
       ),
     );
   }

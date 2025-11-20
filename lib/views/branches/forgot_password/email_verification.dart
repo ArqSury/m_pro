@@ -19,12 +19,9 @@ class _EmailVerificationState extends State<EmailVerification> {
     if (!formKey.currentState!.validate()) return;
 
     setState(() => isLoading = true);
-
     try {
       await AuthAPI.requestOtp(emailC.text);
-
       Fluttertoast.showToast(msg: "OTP berhasil dikirim ke email");
-
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -34,7 +31,6 @@ class _EmailVerificationState extends State<EmailVerification> {
     } catch (e) {
       Fluttertoast.showToast(msg: e.toString());
     }
-
     setState(() => isLoading = false);
   }
 
@@ -62,7 +58,7 @@ class _EmailVerificationState extends State<EmailVerification> {
               Text('Masukan email Anda', style: TextStyle(fontSize: 28)),
               TextFormField(
                 controller: emailC,
-                decoration: const InputDecoration(labelText: "Email"),
+                decoration: InputDecoration(labelText: "Email"),
                 validator: (value) =>
                     value == null || value.isEmpty ? "Email required" : null,
               ),

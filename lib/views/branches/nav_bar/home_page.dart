@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
+import 'package:m_pro/constant/app_color.dart';
 import 'package:m_pro/function/map_function.dart';
 import 'package:m_pro/services/api.dart';
 import 'package:m_pro/models/user_model.dart';
@@ -42,7 +45,6 @@ class _HomePageState extends State<HomePage> {
       absenStats = await AuthAPI.getAbsenStats();
       userName = profile.data?.name ?? "User";
 
-      // Load saved GPS (do NOT delete)
       savedCheckInLat = await PreferencesHandler.getDouble("check_in_lat");
       savedCheckInLng = await PreferencesHandler.getDouble("check_in_lng");
       savedCheckOutLat = await PreferencesHandler.getDouble("check_out_lat");
@@ -52,7 +54,6 @@ class _HomePageState extends State<HomePage> {
       final serverDate = absenToday?["attendance_date"];
 
       if (serverDate != today) {
-        // New day -> clear old map
         await PreferencesHandler.remove("check_in_lat");
         await PreferencesHandler.remove("check_in_lng");
         await PreferencesHandler.remove("check_out_lat");
@@ -66,36 +67,28 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       Fluttertoast.showToast(msg: "Gagal memuat data");
     }
-
     if (mounted) setState(() => isLoadingData = false);
   }
 
-  // ---------------------- CHECK IN ----------------------------
   Future<void> checkIn() async {
     if (absenToday != null) {
       Fluttertoast.showToast(msg: "Anda sudah absen hari ini");
       return;
     }
-
     final selectedLocation = await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => MapFunction.pickLocation()),
     );
-
     if (selectedLocation == null) {
       Fluttertoast.showToast(msg: "Lokasi tidak dipilih");
       return;
     }
-
     setState(() => loadingCheckIn = true);
-
     try {
       await AuthAPI.absenCheckIn(
         latitude: selectedLocation.latitude,
         longitude: selectedLocation.longitude,
       );
-
-      // Save locally
       await PreferencesHandler.saveDouble(
         "check_in_lat",
         selectedLocation.latitude,
@@ -104,7 +97,6 @@ class _HomePageState extends State<HomePage> {
         "check_in_lng",
         selectedLocation.longitude,
       );
-
       Fluttertoast.showToast(msg: "Absen Masuk Berhasil");
       await loadInitialData();
     } catch (e) {
@@ -114,37 +106,29 @@ class _HomePageState extends State<HomePage> {
     setState(() => loadingCheckIn = false);
   }
 
-  // ---------------------- CHECK OUT ----------------------------
   Future<void> checkOut() async {
     if (absenToday == null) {
       Fluttertoast.showToast(msg: "Anda belum absen masuk");
       return;
     }
-
     if (absenToday?["check_out_time"] != null) {
       Fluttertoast.showToast(msg: "Anda sudah absen pulang");
       return;
     }
-
     final selectedLocation = await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => MapFunction.pickLocation()),
     );
-
     if (selectedLocation == null) {
       Fluttertoast.showToast(msg: "Lokasi tidak dipilih");
       return;
     }
-
     setState(() => loadingCheckOut = true);
-
     try {
       await AuthAPI.absenCheckOut(
         latitude: selectedLocation.latitude,
         longitude: selectedLocation.longitude,
       );
-
-      // Save locally
       await PreferencesHandler.saveDouble(
         "check_out_lat",
         selectedLocation.latitude,
@@ -153,23 +137,19 @@ class _HomePageState extends State<HomePage> {
         "check_out_lng",
         selectedLocation.longitude,
       );
-
       Fluttertoast.showToast(msg: "Absen Pulang Berhasil");
       await loadInitialData();
     } catch (e) {
       Fluttertoast.showToast(msg: e.toString());
     }
-
     setState(() => loadingCheckOut = false);
   }
 
-  // ---------------------- UI ----------------------------
   @override
   Widget build(BuildContext context) {
     if (isLoadingData) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-
     final now = DateFormat("EEEE, dd MMM yyyy", "id_ID").format(DateTime.now());
     final hour = DateTime.now().hour;
     final greeting = hour < 12
@@ -184,111 +164,253 @@ class _HomePageState extends State<HomePage> {
 
     return SafeArea(
       child: Scaffold(
-        floatingActionButton: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        body: Stack(
+          alignment: AlignmentDirectional.topCenter,
           children: [
-            FloatingActionButton.extended(
-              heroTag: "checkInBtn",
-              backgroundColor: Colors.green,
-              onPressed: loadingCheckIn ? null : checkIn,
-              label: Text(loadingCheckIn ? "..." : "Hadir"),
-              icon: const Icon(Icons.login),
-            ),
-            FloatingActionButton.extended(
-              heroTag: "izinBtn",
-              backgroundColor: Colors.orange,
-              label: const Text("Izin"),
-              icon: const Icon(Icons.medical_information),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => Permission()),
-                );
-              },
-            ),
-            FloatingActionButton.extended(
-              heroTag: "checkOutBtn",
-              backgroundColor: Colors.red,
-              onPressed: loadingCheckOut ? null : checkOut,
-              label: Text(loadingCheckOut ? "..." : "Pulang"),
-              icon: const Icon(Icons.logout),
+            buildBackground(),
+            buildLayer(
+              greeting,
+              now,
+              status,
+              checkInTime,
+              checkOutTime,
+              context,
             ),
           ],
         ),
+      ),
+    );
+  }
 
-        body: Padding(
-          padding: const EdgeInsets.all(20),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "$greeting, $userName!",
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(now, style: const TextStyle(fontSize: 16)),
-                const SizedBox(height: 20),
-                Card(
-                  elevation: 3,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: getStatusColor(status),
-                    ),
-                    title: Text(
-                      "Status Hari Ini:\n${getStatusText(status)}",
-                      style: TextStyle(
-                        color: getStatusColor(status),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    subtitle: Text(
-                      "Masuk: $checkInTime \nPulang: $checkOutTime",
-                    ),
+  Widget buildLayer(
+    String greeting,
+    String now,
+    status,
+    checkInTime,
+    checkOutTime,
+    BuildContext context,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            buildGreeting(greeting, now),
+            buildStatus(status, checkInTime, checkOutTime, context),
+            SizedBox(height: 20),
+            if (absenStats != null) buildStatistic(),
+          ],
+        ),
+      ),
+    );
+  }
 
-                    trailing: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => MapView(
-                              checkInLat: savedCheckInLat!,
-                              checkInLng: savedCheckInLng!,
-                              checkOutLat: savedCheckOutLat,
-                              checkOutLng: savedCheckOutLng,
-                            ),
-                          ),
-                        );
-                      },
-                      icon: Icon(Icons.map),
-                      label: Text("Lihat\nLokasi"),
-                    ),
+  Card buildStatistic() {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Statistik Bulan Ini',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              Divider(color: Colors.black),
+              Text(
+                'Total Absen: ${absenStats!["total_absen"]}',
+                style: TextStyle(fontSize: 16, color: AppColor.primary),
+              ),
+              SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Spacer(),
+                  Text(
+                    'Hadir\n${absenStats!["total_masuk"]}',
+                    style: TextStyle(fontSize: 24, color: Colors.lightGreen),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-                const SizedBox(height: 15),
-                if (absenStats != null)
-                  Card(
-                    elevation: 3,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ListTile(
-                      leading: Icon(Icons.bar_chart),
-                      title: const Text("Statistik Bulan Ini"),
-                      subtitle: Text(
-                        "Total Absen: ${absenStats!["total_absen"]}\n"
-                        "Hadir: ${absenStats!["total_masuk"]} | Izin: ${absenStats!["total_izin"]}",
+                  Spacer(),
+                  Container(
+                    height: 80,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        left: BorderSide(color: Colors.black),
+                        right: BorderSide(color: Colors.black),
                       ),
                     ),
                   ),
-              ],
+                  Spacer(),
+                  Text(
+                    'Izin\n${absenStats!["total_izin"]}',
+                    style: TextStyle(fontSize: 24, color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                  Spacer(),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Row buildButton() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        ElevatedButton.icon(
+          onPressed: loadingCheckIn ? null : checkIn,
+          icon: Icon(Icons.login, color: Colors.white),
+          label: Text(
+            loadingCheckIn ? "..." : "Hadir",
+            style: TextStyle(color: Colors.white),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green,
+            padding: EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
             ),
           ),
+        ),
+        ElevatedButton.icon(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => Permission()),
+            );
+          },
+          icon: Icon(Icons.medical_information, color: Colors.white),
+          label: Text("Izin", style: TextStyle(color: Colors.white)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.orange,
+            padding: EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        ),
+        ElevatedButton.icon(
+          onPressed: loadingCheckOut ? null : checkOut,
+          icon: Icon(Icons.logout, color: Colors.white),
+          label: Text(
+            loadingCheckOut ? "..." : "Pulang",
+            style: TextStyle(color: Colors.white),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            padding: EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Card buildStatus(status, checkInTime, checkOutTime, BuildContext context) {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircleAvatar(backgroundColor: getStatusColor(status)),
+                  SizedBox(width: 20),
+                  Text(
+                    "Status: ${getStatusText(status)}",
+                    style: TextStyle(
+                      color: getStatusColor(status),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                  ),
+                ],
+              ),
+              Divider(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Spacer(),
+                  Text('Masuk: $checkInTime'),
+                  Spacer(),
+                  Text('Pulang: $checkOutTime'),
+                  Spacer(),
+                ],
+              ),
+              SizedBox(height: 20),
+              buildButton(),
+              SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => MapView(
+                            checkInLat: savedCheckInLat!,
+                            checkInLng: savedCheckInLng!,
+                            checkOutLat: savedCheckOutLat,
+                            checkOutLng: savedCheckOutLng,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: Icon(Icons.map),
+                    label: Text("Lihat\nLokasi"),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Container buildGreeting(String greeting, String now) {
+    return Container(
+      width: double.infinity,
+      height: 120,
+      margin: const EdgeInsets.all(8),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              "$greeting!",
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            Text(
+              userName,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            Text(now, style: TextStyle(fontSize: 16, color: Colors.white)),
+          ],
         ),
       ),
     );
@@ -314,5 +436,19 @@ class _HomePageState extends State<HomePage> {
       default:
         return "Belum Absen";
     }
+  }
+
+  Container buildBackground() {
+    return Container(
+      height: double.infinity,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColor.button, AppColor.secondary],
+          begin: AlignmentDirectional.topStart,
+          end: AlignmentDirectional.bottomEnd,
+        ),
+      ),
+    );
   }
 }

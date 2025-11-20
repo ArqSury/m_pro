@@ -6,7 +6,6 @@ class MapView extends StatefulWidget {
   final double? checkInLng;
   final double? checkOutLat;
   final double? checkOutLng;
-
   const MapView({
     super.key,
     this.checkInLat,
@@ -26,8 +25,8 @@ class _MapViewState extends State<MapView> {
   Widget build(BuildContext context) {
     if (widget.checkInLat == null || widget.checkInLng == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text("Lokasi Absen")),
-        body: const Center(
+        appBar: AppBar(title: Text("Lokasi Absen")),
+        body: Center(
           child: Text(
             "Tidak ada data lokasi untuk hari ini.",
             style: TextStyle(fontSize: 16),
@@ -40,7 +39,6 @@ class _MapViewState extends State<MapView> {
         (widget.checkOutLat != null && widget.checkOutLng != null)
         ? LatLng(widget.checkOutLat!, widget.checkOutLng!)
         : null;
-
     final markers = <Marker>{
       Marker(
         markerId: const MarkerId("check_in"),
@@ -49,26 +47,27 @@ class _MapViewState extends State<MapView> {
         infoWindow: const InfoWindow(title: "Check-In"),
       ),
     };
-
     if (checkOutPos != null) {
       markers.add(
         Marker(
-          markerId: const MarkerId("check_out"),
+          markerId: MarkerId("check_out"),
           position: checkOutPos,
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-          infoWindow: const InfoWindow(title: "Check-Out"),
+          infoWindow: InfoWindow(title: "Check-Out"),
         ),
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text("Lokasi Absen")),
-      body: GoogleMap(
-        initialCameraPosition: CameraPosition(target: checkInPos, zoom: 16),
-        markers: markers,
-        onMapCreated: (controller) {
-          mapController = controller;
-        },
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(title: Text("Lokasi Absen")),
+        body: GoogleMap(
+          initialCameraPosition: CameraPosition(target: checkInPos, zoom: 16),
+          markers: markers,
+          onMapCreated: (controller) {
+            mapController = controller;
+          },
+        ),
       ),
     );
   }

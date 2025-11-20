@@ -28,15 +28,13 @@ class DetailDialog extends StatelessWidget {
             _info("Check-In", data["check_in_time"] ?? "-"),
             _info("Check-Out", data["check_out_time"] ?? "-"),
             _info("Alasan Izin", data["alasan_izin"] ?? "-"),
-
-            const SizedBox(height: 20),
-
+            SizedBox(height: 20),
             if (checkInLat != null)
               ElevatedButton.icon(
                 icon: const Icon(Icons.map),
                 label: const Text("Lihat Lokasi"),
                 onPressed: () {
-                  Navigator.pop(context); // close dialog dulu
+                  Navigator.pop(context);
                   Navigator.push(
                     context,
                     MaterialPageRoute(
