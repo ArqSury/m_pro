@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:m_pro/function/textform_function.dart';
 import 'package:m_pro/services/api.dart';
 
 class ResetPassword extends StatefulWidget {
@@ -58,19 +59,9 @@ class _ResetPasswordState extends State<ResetPassword> {
         key: formKey,
         child: Column(
           children: [
-            TextFormField(
-              controller: otpC,
-              decoration: InputDecoration(labelText: "Kode OTP"),
-              validator: (v) =>
-                  v == null || v.isEmpty ? "OTP wajib diisi" : null,
-            ),
-            SizedBox(height: 15),
-            TextFormField(
-              controller: passC,
-              obscureText: true,
-              decoration: InputDecoration(labelText: "Kata sandi baru"),
-              validator: (v) => v!.length < 6 ? "Minimal 6 karakter" : null,
-            ),
+            inputOTP(),
+            SizedBox(height: 16),
+            inputNewPass(),
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: isLoading ? null : resetPassword,
@@ -79,6 +70,36 @@ class _ResetPasswordState extends State<ResetPassword> {
           ],
         ),
       ),
+    );
+  }
+
+  TextformFunction inputNewPass() {
+    return TextformFunction(
+      controller: passC,
+      hint: 'Kata Sandi Baru',
+      isPassword: true,
+      validator: (v) {
+        if (v == null || v.isEmpty) {
+          return "Kata sandi tidak boleh kosong";
+        } else if (v.length < 8) {
+          return "Kata sandi minimal 8 karakter";
+        }
+        return null;
+      },
+    );
+  }
+
+  TextformFunction inputOTP() {
+    return TextformFunction(
+      controller: otpC,
+      hint: 'OTP',
+      isNumber: true,
+      validator: (v) {
+        if (v == null || v.isEmpty) {
+          return "OTP wajib diisi";
+        }
+        return null;
+      },
     );
   }
 

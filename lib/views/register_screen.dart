@@ -214,8 +214,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       controller: passwordC,
       isPassword: true,
       validator: (v) {
-        if (v == null || v.isEmpty) return "Password tidak boleh kosong";
-        if (v.length < 6) return "Minimal 6 karakter";
+        if (v == null || v.isEmpty) return "Kata Sandi tidak boleh kosong";
+        if (v.length < 8) return "Minimal 8 karakter";
         return null;
       },
     );

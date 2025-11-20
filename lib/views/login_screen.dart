@@ -168,8 +168,8 @@ class _LoginScreenState extends State<LoginScreen> {
       validator: (v) {
         if (v == null || v.isEmpty) {
           return "Kata sandi tidak boleh kosong";
-        } else if (v.length < 6) {
-          return "Kata sandi minimal 6 karakter";
+        } else if (v.length < 8) {
+          return "Kata sandi minimal 8 karakter";
         }
         return null;
       },
