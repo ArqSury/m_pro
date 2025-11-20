@@ -31,24 +31,13 @@ class _MainScreenState extends State<MainScreen> {
       child: Scaffold(
         bottomNavigationBar: BottomNavigationBar(
           items: [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              backgroundColor: AppColor.primary,
-              label: 'Beranda',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.list),
-              backgroundColor: AppColor.primary,
-              label: 'Absensi',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person),
-              backgroundColor: AppColor.primary,
-              label: 'Profil',
-            ),
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
+            BottomNavigationBarItem(icon: Icon(Icons.list), label: 'Absensi'),
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
           ],
           currentIndex: _selectedBar,
-          selectedItemColor: AppColor.secondary,
+          selectedItemColor: Colors.white,
+          backgroundColor: AppColor.primary,
           onTap: _onBarTapped,
         ),
         body: Center(child: _navOptions.elementAt(_selectedBar)),

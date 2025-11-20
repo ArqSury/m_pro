@@ -18,28 +18,18 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  // LIST DATA
   List<Map<String, dynamic>> batchList = [];
   List<Map<String, dynamic>> trainingList = [];
-
-  // SELECTED VALUES
   int? selectedBatchId;
   int? selectedTrainingId;
-
-  // UI STATE
   bool loadingDropdown = true;
   bool loadingRegister = false;
 
-  // CONTROLLERS
   final nameC = TextEditingController();
   final emailC = TextEditingController();
   final passwordC = TextEditingController();
-
-  // FORM & FIELDS
   final formKey = GlobalKey<FormState>();
   String? selectedGender;
-
-  // PHOTO
   File? selectedImage;
   String? base64Photo;
 
@@ -49,9 +39,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     loadDropdownData();
   }
 
-  // -------------------------------------------------------------
-  // LOAD BATCH + TRAINING LIST
-  // -------------------------------------------------------------
   Future loadDropdownData() async {
     try {
       batchList = await AuthAPI.getBatchList();
@@ -62,20 +49,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => loadingDropdown = false);
   }
 
-  // -------------------------------------------------------------
-  // LOAD TRAININGS based on selected batch
-  // -------------------------------------------------------------
   void loadTrainingForBatch(int batchId) {
     final selected = batchList.firstWhere((b) => b["id"] == batchId);
     trainingList = List<Map<String, dynamic>>.from(selected["trainings"]);
 
-    selectedTrainingId = null; // Reset training picker
+    selectedTrainingId = null;
     setState(() {});
   }
 
-  // -------------------------------------------------------------
-  // PICK PROFILE PHOTO
-  // -------------------------------------------------------------
   Future pickImage() async {
     final picker = ImagePicker();
     final XFile? img = await picker.pickImage(source: ImageSource.gallery);
@@ -91,9 +72,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
   }
 
-  // -------------------------------------------------------------
-  // REGISTER USER
-  // -------------------------------------------------------------
   Future register() async {
     if (!formKey.currentState!.validate()) return;
 
@@ -109,9 +87,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       Fluttertoast.showToast(msg: "Pilih jenis pelatihan");
       return;
     }
-
     setState(() => loadingRegister = true);
-
     try {
       await AuthAPI.registerUser(
         RegisterRequest(
@@ -124,7 +100,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           profilePhoto: base64Photo,
         ),
       );
-
       Fluttertoast.showToast(msg: "Registrasi berhasil");
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -132,11 +107,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         msg: e.toString().replaceAll("Exception:", "").trim(),
       );
     }
-
     if (mounted) setState(() => loadingRegister = false);
   }
 
-  // -------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -149,19 +122,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // -------------------------------------------------------------
-  // UI LAYER
-  // -------------------------------------------------------------
   Padding buildFormLayer() {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Form(
         key: formKey,
         child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
+          physics: BouncingScrollPhysics(),
           child: Column(
             children: [
-              const Text(
+              Text(
                 "Daftar",
                 style: TextStyle(
                   color: Colors.white,
@@ -169,30 +139,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-
-              const SizedBox(height: 20),
-
+              SizedBox(height: 20),
               inputName(),
-              const SizedBox(height: 16),
-
+              SizedBox(height: 16),
               inputEmail(),
-              const SizedBox(height: 16),
-
+              SizedBox(height: 16),
               inputPassword(),
-              const SizedBox(height: 16),
-
+              SizedBox(height: 16),
               inputGender(),
-              const SizedBox(height: 16),
-
+              SizedBox(height: 16),
               inputBatchDropdown(),
-              const SizedBox(height: 16),
-
+              SizedBox(height: 16),
               inputTrainingDropdown(),
-              const SizedBox(height: 16),
-
+              SizedBox(height: 16),
               inputProfilePhoto(),
-              const SizedBox(height: 28),
-
+              SizedBox(height: 28),
               ButtonFunction(
                 text: loadingRegister ? "Loading..." : "Daftar",
                 height: 50,
@@ -201,10 +162,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 color: Colors.white,
                 onPressed: loadingRegister ? null : register,
               ),
-
-              const SizedBox(height: 40),
-              const Divider(color: Colors.white),
-
+              SizedBox(height: 40),
+              Divider(color: Colors.white),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -228,9 +187,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // -------------------------------------------------------------
-  // INPUT COMPONENTS
-  // -------------------------------------------------------------
   TextformFunction inputName() {
     return TextformFunction(
       hint: "Nama",
@@ -267,14 +223,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   DropdownButtonFormField<String> inputGender() {
     return DropdownButtonFormField<String>(
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         filled: true,
         fillColor: Colors.white,
         labelText: "Jenis Kelamin",
         border: OutlineInputBorder(),
       ),
       value: selectedGender,
-      items: const [
+      items: [
         DropdownMenuItem(value: "L", child: Text("Laki-laki")),
         DropdownMenuItem(value: "P", child: Text("Perempuan")),
       ],
@@ -285,13 +241,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget inputBatchDropdown() {
     if (loadingDropdown) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      );
+      return Center(child: CircularProgressIndicator(color: Colors.white));
     }
-
     return DropdownButtonFormField<int>(
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         filled: true,
         fillColor: Colors.white,
         labelText: "Batch Pelatihan",
@@ -322,7 +275,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget inputTrainingDropdown() {
     return DropdownButtonFormField<int>(
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         filled: true,
         fillColor: Colors.white,
         labelText: "Pelatihan",
@@ -330,7 +283,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
       value: selectedTrainingId,
       items: trainingList.isEmpty
-          ? [] // no items yet
+          ? []
           : trainingList.map((t) {
               return DropdownMenuItem<int>(
                 value: (t["id"] as num).toInt(),
@@ -341,7 +294,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               );
             }).toList(),
       onChanged: trainingList.isEmpty
-          ? null // disable before batch selected
+          ? null
           : (v) => setState(() => selectedTrainingId = v),
       validator: (v) => v == null ? "Pilih pelatihan" : null,
     );
@@ -367,20 +320,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ? FileImage(selectedImage!)
                   : null,
               child: selectedImage == null
-                  ? const Icon(Icons.camera_alt, size: 40)
+                  ? Icon(Icons.camera_alt, size: 40)
                   : null,
             ),
-            const SizedBox(height: 10),
-            const Text("Pilih Foto Profil"),
+            SizedBox(height: 10),
+            Text("Pilih Foto Profil"),
           ],
         ),
       ),
     );
   }
 
-  // -------------------------------------------------------------
-  // BACKGROUND IMAGE
-  // -------------------------------------------------------------
   Widget buildBackground() {
     return Container(
       decoration: const BoxDecoration(
