@@ -25,20 +25,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
   login() async {
     if (!formKey.currentState!.validate()) return;
-
     setState(() => isLoading = true);
-
     try {
       final user = await AuthAPI.login(
         email: emailC.text,
         password: passwordC.text,
       );
-
       await PreferencesHandler.saveToken(user.data?.token ?? "");
       await PreferencesHandler.saveRememberMe(rememberMe);
-
-      Fluttertoast.showToast(msg: "Login successful");
-
+      Fluttertoast.showToast(msg: "Login berhasil");
       if (mounted) {
         Navigator.pushAndRemoveUntil(
           context,
@@ -49,7 +44,6 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       Fluttertoast.showToast(msg: e.toString().replaceAll("Exception:", ""));
     }
-
     setState(() => isLoading = false);
   }
 
@@ -100,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Row(children: [buildRemember(), Spacer(), buildForgot()]),
               SizedBox(height: 16),
               ButtonFunction(
-                text: isLoading ? "Loading..." : "Masuk",
+                text: isLoading ? "..." : "Masuk",
                 height: 40,
                 width: double.infinity,
                 backgroundColor: AppColor.button,
@@ -126,7 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       );
                     },
-                    child: const Text(
+                    child: Text(
                       "Daftar",
                       style: TextStyle(color: Colors.lightBlueAccent),
                     ),
@@ -148,10 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
           MaterialPageRoute(builder: (context) => EmailVerification()),
         );
       },
-      child: const Text(
-        "Lupa kata sandi?",
-        style: TextStyle(color: Colors.white),
-      ),
+      child: Text("Lupa kata sandi?", style: TextStyle(color: Colors.white)),
     );
   }
 
